@@ -35,34 +35,51 @@ const MonitoringDashboard = () => {
   });
   const [currentAlert, setCurrentAlert] = useState<string | null>(null);
 
-  // Simulate eye tracking data
+  // Simulate eye tracking data with stable retina focus
+  const [baseRetinaFocus, setBaseRetinaFocus] = useState({ left: 85, right: 88 });
+  
   useEffect(() => {
     if (!isMonitoring) return;
 
     const interval = setInterval(() => {
-      const headMovementX = Math.random() * 200 - 100; // -100 to 100
-      const headMovementY = Math.random() * 120 - 60;  // -60 to 60
+      // Simulate occasional head movement (less frequent)
+      const shouldMoveHead = Math.random() > 0.8; // 20% chance of head movement
+      const headMovementX = shouldMoveHead ? Math.random() * 200 - 100 : Math.random() * 20 - 10; // smaller random movement when stable
+      const headMovementY = shouldMoveHead ? Math.random() * 120 - 60 : Math.random() * 15 - 7.5;
+      
+      const headX = headMovementX < -30 ? 'left' : headMovementX > 30 ? 'right' : 'center';
+      const headY = headMovementY < -20 ? 'up' : headMovementY > 20 ? 'down' : 'center';
+      
+      // Only change retina focus if there's significant eye movement
+      const shouldUpdateRetina = Math.random() > 0.7; // 30% chance
+      if (shouldUpdateRetina) {
+        setBaseRetinaFocus(prev => ({
+          left: Math.max(70, Math.min(100, prev.left + (Math.random() * 10 - 5))),
+          right: Math.max(70, Math.min(100, prev.right + (Math.random() * 10 - 5)))
+        }));
+      }
+      
+      const isHeadDistracted = headX !== 'center' || headY !== 'center';
+      const distractionLevel = isHeadDistracted ? 
+        (Math.abs(headMovementX) > 60 || Math.abs(headMovementY) > 40 ? 'critical' : 'warning') : 'normal';
       
       const mockEyeData: EyeTrackingData = {
         leftEye: {
-          x: 320 + headMovementX + Math.random() * 40 - 20,
-          y: 240 + headMovementY + Math.random() * 30 - 15,
-          confidence: 0.8 + Math.random() * 0.2,
-          retinaFocus: Math.random() * 100 // 0-100% retina focus
+          x: 320 + headMovementX + Math.random() * 10 - 5, // reduced random movement
+          y: 240 + headMovementY + Math.random() * 8 - 4,
+          confidence: 0.85 + Math.random() * 0.15,
+          retinaFocus: baseRetinaFocus.left + Math.random() * 5 - 2.5 // stable with small variations
         },
         rightEye: {
-          x: 400 + headMovementX + Math.random() * 40 - 20,
-          y: 240 + headMovementY + Math.random() * 30 - 15,
-          confidence: 0.8 + Math.random() * 0.2,
-          retinaFocus: Math.random() * 100 // 0-100% retina focus
+          x: 400 + headMovementX + Math.random() * 10 - 5,
+          y: 240 + headMovementY + Math.random() * 8 - 4,
+          confidence: 0.85 + Math.random() * 0.15,
+          retinaFocus: baseRetinaFocus.right + Math.random() * 5 - 2.5 // stable with small variations
         },
-        headDirection: {
-          x: headMovementX < -30 ? 'left' : headMovementX > 30 ? 'right' : 'center',
-          y: headMovementY < -20 ? 'up' : headMovementY > 20 ? 'down' : 'center'
-        },
-        gazeDirection: `${headMovementX < -30 ? 'Left' : headMovementX > 30 ? 'Right' : 'Center'} ${headMovementY < -20 ? 'Up' : headMovementY > 20 ? 'Down' : ''}`.trim(),
-        isDistracted: Math.random() > 0.7,
-        distractionLevel: Math.random() > 0.9 ? 'critical' : Math.random() > 0.8 ? 'warning' : 'normal'
+        headDirection: { x: headX, y: headY },
+        gazeDirection: `${headX === 'left' ? 'Left' : headX === 'right' ? 'Right' : 'Center'} ${headY === 'up' ? 'Up' : headY === 'down' ? 'Down' : ''}`.trim(),
+        isDistracted: isHeadDistracted,
+        distractionLevel
       };
 
       setEyeData(mockEyeData);
@@ -76,12 +93,20 @@ const MonitoringDashboard = () => {
         alertsTriggered: mockEyeData.distractionLevel === 'critical' ? prev.alertsTriggered + 1 : prev.alertsTriggered
       }));
 
-      // Show alerts
+      // Show specific head movement alerts
       if (mockEyeData.distractionLevel === 'critical') {
-        setCurrentAlert('CRITICAL: Eyes off road detected!');
+        if (headX === 'left') setCurrentAlert('⚠️ DISTRACTED: Head turned LEFT - Focus on road!');
+        else if (headX === 'right') setCurrentAlert('⚠️ DISTRACTED: Head turned RIGHT - Focus on road!');
+        else if (headY === 'up') setCurrentAlert('⚠️ DISTRACTED: Head looking UP - Focus on road!');
+        else if (headY === 'down') setCurrentAlert('⚠️ DISTRACTED: Head looking DOWN - Focus on road!');
+        else setCurrentAlert('⚠️ CRITICAL: Eyes off road detected!');
         setTimeout(() => setCurrentAlert(null), 3000);
       } else if (mockEyeData.distractionLevel === 'warning') {
-        setCurrentAlert('Warning: Possible distraction detected');
+        if (headX === 'left') setCurrentAlert('⚠️ Warning: Slight head turn LEFT detected');
+        else if (headX === 'right') setCurrentAlert('⚠️ Warning: Slight head turn RIGHT detected');
+        else if (headY === 'up') setCurrentAlert('⚠️ Warning: Head tilted UP detected');
+        else if (headY === 'down') setCurrentAlert('⚠️ Warning: Head tilted DOWN detected');
+        else setCurrentAlert('⚠️ Warning: Possible distraction detected');
         setTimeout(() => setCurrentAlert(null), 2000);
       }
     }, 1000);
