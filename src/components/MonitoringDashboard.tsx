@@ -3,13 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Camera, AlertTriangle, CheckCircle, XCircle, Activity } from "lucide-react";
+import { Eye, Camera, AlertTriangle, CheckCircle, XCircle, Activity, Download, Navigation } from "lucide-react";
+import jsPDF from 'jspdf';
 
 interface EyeTrackingData {
-  leftEye: { x: number; y: number; confidence: number };
-  rightEye: { x: number; y: number; confidence: number };
+  leftEye: { x: number; y: number; confidence: number; retinaFocus: number };
+  rightEye: { x: number; y: number; confidence: number; retinaFocus: number };
+  headDirection: { x: string; y: string }; // 'left'|'center'|'right', 'up'|'center'|'down'
   isDistracted: boolean;
   distractionLevel: 'normal' | 'warning' | 'critical';
+  gazeDirection: string;
 }
 
 interface DistractionStats {
@@ -37,17 +40,27 @@ const MonitoringDashboard = () => {
     if (!isMonitoring) return;
 
     const interval = setInterval(() => {
+      const headMovementX = Math.random() * 200 - 100; // -100 to 100
+      const headMovementY = Math.random() * 120 - 60;  // -60 to 60
+      
       const mockEyeData: EyeTrackingData = {
         leftEye: {
-          x: 320 + Math.random() * 100 - 50,
-          y: 240 + Math.random() * 60 - 30,
-          confidence: 0.8 + Math.random() * 0.2
+          x: 320 + headMovementX + Math.random() * 40 - 20,
+          y: 240 + headMovementY + Math.random() * 30 - 15,
+          confidence: 0.8 + Math.random() * 0.2,
+          retinaFocus: Math.random() * 100 // 0-100% retina focus
         },
         rightEye: {
-          x: 400 + Math.random() * 100 - 50,
-          y: 240 + Math.random() * 60 - 30,
-          confidence: 0.8 + Math.random() * 0.2
+          x: 400 + headMovementX + Math.random() * 40 - 20,
+          y: 240 + headMovementY + Math.random() * 30 - 15,
+          confidence: 0.8 + Math.random() * 0.2,
+          retinaFocus: Math.random() * 100 // 0-100% retina focus
         },
+        headDirection: {
+          x: headMovementX < -30 ? 'left' : headMovementX > 30 ? 'right' : 'center',
+          y: headMovementY < -20 ? 'up' : headMovementY > 20 ? 'down' : 'center'
+        },
+        gazeDirection: `${headMovementX < -30 ? 'Left' : headMovementX > 30 ? 'Right' : 'Center'} ${headMovementY < -20 ? 'Up' : headMovementY > 20 ? 'Down' : ''}`.trim(),
         isDistracted: Math.random() > 0.7,
         distractionLevel: Math.random() > 0.9 ? 'critical' : Math.random() > 0.8 ? 'warning' : 'normal'
       };
@@ -121,6 +134,55 @@ const MonitoringDashboard = () => {
     }
   };
 
+  const generateReport = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.text('Driver Monitoring Report', 20, 30);
+    
+    // Date and time
+    doc.setFontSize(12);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 45);
+    
+    // Performance metrics
+    doc.setFontSize(16);
+    doc.text('Performance Summary', 20, 65);
+    
+    doc.setFontSize(12);
+    doc.text(`Focus Score: ${stats.focusScore}%`, 20, 80);
+    doc.text(`Total Session Time: ${Math.floor(stats.totalTime / 60)}:${(stats.totalTime % 60).toString().padStart(2, '0')}`, 20, 95);
+    doc.text(`Time Distracted: ${stats.distractionTime} seconds`, 20, 110);
+    doc.text(`Alerts Triggered: ${stats.alertsTriggered}`, 20, 125);
+    doc.text(`Attention Rate: ${Math.round(((stats.totalTime - stats.distractionTime) / stats.totalTime) * 100)}%`, 20, 140);
+    
+    // Current status
+    if (eyeData) {
+      doc.text('Current Status', 20, 165);
+      doc.text(`Gaze Direction: ${eyeData.gazeDirection}`, 20, 180);
+      doc.text(`Head Position: ${eyeData.headDirection.x} ${eyeData.headDirection.y}`, 20, 195);
+      doc.text(`Left Eye Focus: ${eyeData.leftEye.retinaFocus.toFixed(1)}%`, 20, 210);
+      doc.text(`Right Eye Focus: ${eyeData.rightEye.retinaFocus.toFixed(1)}%`, 20, 225);
+      doc.text(`Alert Level: ${eyeData.distractionLevel.toUpperCase()}`, 20, 240);
+    }
+    
+    // Recommendations
+    doc.text('Safety Recommendations', 20, 265);
+    doc.setFontSize(10);
+    if (stats.focusScore < 70) {
+      doc.text('• Consider taking breaks more frequently', 25, 280);
+      doc.text('• Adjust seat position for better comfort', 25, 290);
+    }
+    if (stats.alertsTriggered > 5) {
+      doc.text('• Review driving conditions and reduce distractions', 25, 300);
+    }
+    doc.text('• Maintain proper posture while driving', 25, 310);
+    doc.text('• Ensure adequate rest before long drives', 25, 320);
+    
+    // Save the PDF
+    doc.save(`driver-monitoring-report-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-dashboard p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -177,24 +239,53 @@ const MonitoringDashboard = () => {
                 {/* Eye tracking overlay */}
                 {eyeData && isMonitoring && (
                   <div className="absolute top-0 left-0 w-full h-full">
-                    {/* Left eye indicator */}
+                    {/* Left eye indicator with retina focus */}
                     <div 
-                      className="absolute w-4 h-4 border-2 border-primary rounded-full animate-pulse-glow"
+                      className="absolute"
                       style={{
                         left: `${(eyeData.leftEye.x / 640) * 100}%`,
                         top: `${(eyeData.leftEye.y / 480) * 100}%`,
                         transform: 'translate(-50%, -50%)'
                       }}
-                    />
-                    {/* Right eye indicator */}
+                    >
+                      <div className="w-6 h-6 border-2 border-primary rounded-full animate-pulse-glow">
+                        <div 
+                          className="w-2 h-2 bg-primary rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                          style={{ opacity: eyeData.leftEye.retinaFocus / 100 }}
+                        />
+                      </div>
+                      <div className="text-xs text-primary font-semibold mt-1 text-center">
+                        L: {eyeData.leftEye.retinaFocus.toFixed(0)}%
+                      </div>
+                    </div>
+                    
+                    {/* Right eye indicator with retina focus */}
                     <div 
-                      className="absolute w-4 h-4 border-2 border-primary rounded-full animate-pulse-glow"
+                      className="absolute"
                       style={{
                         left: `${(eyeData.rightEye.x / 640) * 100}%`,
                         top: `${(eyeData.rightEye.y / 480) * 100}%`,
                         transform: 'translate(-50%, -50%)'
                       }}
-                    />
+                    >
+                      <div className="w-6 h-6 border-2 border-primary rounded-full animate-pulse-glow">
+                        <div 
+                          className="w-2 h-2 bg-primary rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                          style={{ opacity: eyeData.rightEye.retinaFocus / 100 }}
+                        />
+                      </div>
+                      <div className="text-xs text-primary font-semibold mt-1 text-center">
+                        R: {eyeData.rightEye.retinaFocus.toFixed(0)}%
+                      </div>
+                    </div>
+
+                    {/* Head direction indicator */}
+                    <div className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm rounded-lg p-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Navigation className="w-4 h-4 text-primary" />
+                        <span>Gaze: {eyeData.gazeDirection}</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -202,13 +293,25 @@ const MonitoringDashboard = () => {
               {/* Eye tracking info */}
               {eyeData && (
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Left Eye Confidence</div>
-                    <Progress value={eyeData.leftEye.confidence * 100} className="h-2" />
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Left Eye Confidence</div>
+                      <Progress value={eyeData.leftEye.confidence * 100} className="h-2" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Left Retina Focus</div>
+                      <Progress value={eyeData.leftEye.retinaFocus} className="h-2" />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Right Eye Confidence</div>
-                    <Progress value={eyeData.rightEye.confidence * 100} className="h-2" />
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Right Eye Confidence</div>
+                      <Progress value={eyeData.rightEye.confidence * 100} className="h-2" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-muted-foreground">Right Retina Focus</div>
+                      <Progress value={eyeData.rightEye.retinaFocus} className="h-2" />
+                    </div>
                   </div>
                 </div>
               )}
@@ -288,9 +391,19 @@ const MonitoringDashboard = () => {
             <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Generate Report</h3>
-                <Button className="w-full bg-gradient-primary hover:opacity-90">
+                <Button 
+                  onClick={generateReport}
+                  className="w-full bg-gradient-primary hover:opacity-90"
+                  disabled={stats.totalTime < 10}
+                >
+                  <Download className="w-4 h-4 mr-2" />
                   Export PDF Report
                 </Button>
+                {stats.totalTime < 10 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Monitor for at least 10 seconds to generate report
+                  </p>
+                )}
               </div>
             </Card>
           </div>
