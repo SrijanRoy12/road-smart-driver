@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+# 🚗 Smart Driver Monitoring System  
+### Real-time Attention Tracking for Safer Roads
 
-## Project info
+![Python](https://img.shields.io/badge/Python-3.9+-blue?style=for-the-badge&logo=python)  
+![OpenCV](https://img.shields.io/badge/OpenCV-Vision-brightgreen?style=for-the-badge&logo=opencv)  
+![MediaPipe](https://img.shields.io/badge/MediaPipe-FaceMesh-orange?style=for-the-badge&logo=google)  
+![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)
 
-**URL**: https://lovable.dev/projects/6aff663c-66ad-4bbf-b5ec-0c5b8ff0b161
+---
 
-## How can I edit this code?
+## 📍 Project Overview
 
-There are several ways of editing your application.
+The **Smart Driver Monitoring System** is a Python-based, vision-driven application designed to enhance road safety by continuously monitoring a driver's focus in real time. It uses **OpenCV** and **MediaPipe** to detect attention lapses and provides escalating alerts — from visual feedback to haptic/audio alarms.
 
-**Use Lovable**
+> 🧠 This system simulates a driver-assistive safety feature found in advanced vehicles using accessible tools and real-time computer vision.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6aff663c-66ad-4bbf-b5ec-0c5b8ff0b161) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🔍 Core Features
 
-**Use your preferred IDE**
+- 👁️ **Retina-based Eye & Face Tracking**
+- ⚠️ **Distraction Detection** using MediaPipe FaceMesh
+- 🧠 **Tiered Alert System**: Visual ⮕ Audio
+- 📊 **Focus Scoring System** with Live Feedback
+- 📝 **Auto-generated PDF Report** of driver focus stats
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+| Technology | Purpose |
+|------------|---------|
+| Python     | Core language |
+| OpenCV     | Webcam capture & overlays |
+| MediaPipe  | Real-time face/eye detection |
+| playsound  | Audio alert system |
+| FPDF       | PDF report generation |
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📁 Project Structure
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+driver_monitoring_system/
+├── main.py                 # Entry point
+├── retina_tracker.py       # Eye detection and focus logic
+├── alert_manager.py        # Alert escalation handler
+├── report_generator.py     # PDF summary of session
+├── assets/
+│   └── alarm.wav           # Alarm sound file
+├── reports/
+│   └── *.pdf               # Auto-generated focus reports
+└── requirements.txt        # Python dependencies
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Getting Started
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
 
-**Use GitHub Codespaces**
+###  Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Run the App
+```bash
+python main.py
+```
 
-## What technologies are used for this project?
+> Press `Q` to end the session and generate your focus report.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📄 Output
 
-## How can I deploy this project?
+- Live webcam preview with real-time focus status
+- Focus Score (e.g., 92%) on screen
+- Alert when driver looks away for too long
+- PDF report saved in the `/reports` folder
 
-Simply open [Lovable](https://lovable.dev/projects/6aff663c-66ad-4bbf-b5ec-0c5b8ff0b161) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 📌 Future Improvements
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Head pose estimation
+- Nighttime/IR support
+- Voice alert system
+- Streamlit web interface
